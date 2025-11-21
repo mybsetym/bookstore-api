@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
+    DATABASE_URL: str = "mysql+asyncmy://root:MyB202853@@localhost:3306/app"
     # API 相关配置
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Second-Hand Book Platform"

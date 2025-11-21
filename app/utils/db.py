@@ -1,4 +1,5 @@
 import pymysql
+import databases
 from pymysql.cursors import DictCursor
 from app.config import settings  # 假设你的配置文件在 app/config.py
 
@@ -66,7 +67,14 @@ def execute_update(sql, params=()):
         raise e
     finally:
         conn.close()
+database = databases.Database(settings.DATABASE_URL)
 
+async def execute_query_one_async(query, values):
+    await database.connect()
+    try:
+        return await database.fetch_one(query, values)
+    finally:
+        await database.disconnect()
 
 def execute_query_paginated(sql, params, page=1, page_size=10):
     """
