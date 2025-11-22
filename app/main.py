@@ -3,11 +3,11 @@ from app.api import school
 from app.api import search
 from app.api import auth, book, order, profile, school, products # 导入 product
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.api.im_router import router as im_router  # 导入IM路由
 app = FastAPI(
     title="图书商城API",
     description="适配现有数据库表结构的后端接口",
-    version="1.0.0"
+    version="1.3.1"
 )
 
 # 解决跨域问题
@@ -26,7 +26,7 @@ app.include_router(order.router)
 app.include_router(profile.router)
 app.include_router(school.router)  # 注册学校模块路由
 app.include_router(search.router)
-
+app.include_router(im_router)
 app.include_router(products.router)
 # 健康检查
 @app.get("/", summary="健康检查")
