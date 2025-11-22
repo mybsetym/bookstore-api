@@ -16,9 +16,9 @@ router = APIRouter(
 # --------------------------
 class NearbyProductRequest(BaseModel):
     """获取附近商品的请求参数"""
-    user_lat: float = Query(..., description="用户所在纬度（例如：39.908823）")
-    user_lng: float = Query(..., description="用户所在经度（例如：116.397470）")
-    radius: Optional[int] = Query(5, description="搜索半径，单位为公里（km），默认5公里")
+    user_lat: float = Query(..., description="用户所在纬度")
+    user_lng: float = Query(..., description="用户所在经度")
+    radius: Optional[int] = Query(5, description="搜索半径，默认5公里")
     page: int = Query(1, ge=1, description="页码")
     page_size: int = Query(10, ge=1, le=50, description="每页条数")
 
