@@ -7,7 +7,7 @@ from app.utils.db import (
     execute_update,
 )
 from datetime import datetime, timezone
-
+from app.core.exceptions import ResourceNotFoundError
 router = APIRouter(
     prefix="/products",  # 接口前缀统一为 /products
     tags=["商品模块"],  # 归类到“商品模块”，文档更清晰
@@ -160,7 +160,7 @@ def update_product(
     # 1. 校验商品是否存在
     product = execute_query_one("SELECT seller_ID FROM book WHERE book_id = %s", (book_id,))
     if not product:
-        raise HTTPException(status_code=404, detail="商品不存在")
+        raise ResourceNotFoundError(resource="商品")
 
     # 2. 权限校验（仅卖家可修改）
     if product["seller_ID"] != seller_id:

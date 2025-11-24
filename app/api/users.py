@@ -8,6 +8,7 @@ from app.utils.db import (
     execute_query_paginated
 )
 from datetime import datetime
+from app.core.exceptions import DuplicateDataError
 
 router = APIRouter(
     prefix="/users",
@@ -32,7 +33,7 @@ def register(
         (phone,)
     )
     if existing_phone:
-        raise HTTPException(status_code=400, detail="手机号已被注册")
+        raise DuplicateDataError(field="手机号")
 
     existing_email = execute_query_one(
         "SELECT ID FROM logindata WHERE email = %s",
@@ -131,6 +132,7 @@ def update_user_info(
     )
     if not existing_user:
         raise HTTPException(status_code=404, detail="用户不存在")
+
 
     # 2. 构建更新字段
     update_fields = []

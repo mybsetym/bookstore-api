@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.utils.db import  execute_query_one, execute_update
 from datetime import datetime, timezone
 from typing import Optional
-
+from app.core.exceptions import PermissionDeniedError
 # 路由配置
 router = APIRouter(
     prefix="/admin",
@@ -53,9 +53,9 @@ def verify_admin_permission(admin_id: int):
         (admin_id,)
     )
     if not admin:
-        raise HTTPException(status_code=403, detail="Insufficient permissions: admin role required")
+        raise PermissionDeniedError()  # 统一提示"权限不足"
 
-# --------------------------
+    # --------------------------
 # 核心接口 (使用优化后的函数名)
 # --------------------------
 @router.post("/audit", summary="Audit product/post (admin only)")
