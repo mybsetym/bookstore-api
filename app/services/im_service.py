@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+"""from fastapi import HTTPException
 import time
 import hmac
 import hashlib
@@ -9,7 +9,7 @@ from app.utils.db import execute_query_one_async  # 你的数据库工具
 
 
 class IMService:
-    """腾讯云IM服务封装（适配你的项目结构）"""
+    腾讯云IM服务封装（适配你的项目结构）
 
     def __init__(self):
         # 从根目录config.py读取配置
@@ -20,7 +20,7 @@ class IMService:
         self.api_version = "2020-12-29"
 
     async def _check_user_exists(self, user_id: int) -> bool:
-        """复用你的数据库校验逻辑（utils/db.py）"""
+        复用你的数据库校验逻辑（utils/db.py）
         user = await execute_query_one_async(
             "SELECT ID FROM logindata WHERE ID = %s",
             (user_id,)
@@ -28,7 +28,7 @@ class IMService:
         return bool(user)
 
     def _generate_signature(self, action: str, params: dict) -> dict:
-        """生成腾讯云API签名（核心鉴权逻辑）"""
+        生成腾讯云API签名（核心鉴权逻辑）
         public_params = {
             "SecretId": self.secret_id,
             "Timestamp": int(time.time()),
@@ -52,7 +52,7 @@ class IMService:
         return all_params
 
     def _call_api(self, action: str, params: dict) -> dict:
-        """调用IM API接口"""
+        调用IM API接口
         try:
             params_with_sign = self._generate_signature(action, params)
             response = requests.get(
@@ -69,7 +69,7 @@ class IMService:
             raise HTTPException(status_code=500, detail=str(e))
 
     async def get_user_sig(self, user_id: int, expire: int = 86400) -> dict:
-        """获取用户签名（整合用户校验+API调用）"""
+        获取用户签名（整合用户校验+API调用）
         if not await self._check_user_exists(user_id):
             raise HTTPException(status_code=404, detail="用户不存在")
 
@@ -87,4 +87,4 @@ class IMService:
             "signature": response["Signature"],
             "sdk_app_id": self.sdk_app_id,
             "expire": expire
-        }
+        }"""
