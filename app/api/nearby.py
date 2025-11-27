@@ -1,8 +1,13 @@
-from fastapi import APIRouter, Query, HTTPException, Depends
-from pydantic import BaseModel
-from app.utils.db import execute_query, execute_query_paginated
+#app/api/nearby.py
+# 标准库导入（单独分组，清晰标识）
 from typing import Optional
 
+# 第三方库导入（按模块名首字母序，组内导入项按字母序）
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+
+# 本地应用导入（数据库工具函数，按字母序排列）
+from app.utils.db import execute_query, execute_query_paginated
 # 路由配置
 router = APIRouter(
     prefix="/nearby",

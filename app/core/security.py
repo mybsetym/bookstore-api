@@ -1,16 +1,26 @@
+#app\core\security.py
+# 标准库导入（按模块名+导入项字母序排列）
 from datetime import datetime, timezone, timedelta
-from typing import Any, Union, Optional, Annotated  # 新增 Annotated 导入
+from typing import Annotated, Any, Optional, Union  # 新增 Annotated 导入
 
+# 第三方库导入
+# Crypto 相关
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
-from app.config import settings
-from jose import jwt, JWTError  # 新增 JWTError 导入
-from passlib.context import CryptContext
-# 新增 FastAPI 相关依赖导入（放在原有导入区，不破坏格式）
+
+# FastAPI 相关依赖导入
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from app.utils.db import execute_query_one  # 导入数据库查询工具（项目已在用）
 
+# jose 相关
+from jose import JWTError, jwt
+
+# passlib 相关
+from passlib.context import CryptContext
+
+# 本地应用导入
+from app.config import settings
+from app.utils.db import execute_query_one  # 导入数据库查询工具
 
 # --- 密码哈希 ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

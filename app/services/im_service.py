@@ -1,12 +1,17 @@
-from fastapi import HTTPException
-import time
-import hmac
-import hashlib
+# app/im_service.py
+# 标准库导入（按字母序排列）
 import base64
+import hashlib
+import hmac
+import time
+
+# 第三方库导入（按模块名字母序排列）
+from fastapi import HTTPException
 import httpx  # 替换requests为异步客户端
+
+# 本地应用导入（按模块层级+字母序排列）
 from app.config import settings
 from app.utils.db import execute_query_one_async
-
 
 class IMService:
     def __init__(self):

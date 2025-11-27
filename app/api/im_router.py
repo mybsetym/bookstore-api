@@ -1,10 +1,13 @@
 # app/api/im_router.py
-from fastapi import APIRouter, Query, HTTPException, WebSocket, WebSocketDisconnect
+# 标准库导入
+from typing import Dict, List
+
+# 第三方库导入
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from tencentcloud.clb.v20180317.models import Listener
 
+# 本地应用导入
 from app.services.im_service import IMService
-from typing import Dict,List
-
 
 # 定义路由前缀和标签
 router = APIRouter(

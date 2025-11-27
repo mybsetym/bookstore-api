@@ -1,3 +1,4 @@
+# app/core/exceptions.py
 from fastapi import status
 from pydantic import BaseModel
 

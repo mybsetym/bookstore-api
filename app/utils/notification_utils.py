@@ -1,7 +1,8 @@
 # app/utils/notification_utils.py
+import asyncio
 from app.utils.db import execute_query_one, execute_update
 from app.api.im_router import push_notification_to_user  # 复用WebSocket推送
-import asyncio
+
 
 
 def send_notification(

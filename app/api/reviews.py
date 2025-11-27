@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Body, Query, HTTPException, Path
-from pydantic import BaseModel
-from app.utils.db import execute_query, execute_query_one, execute_update
+#app/api/reviews.py
+# 标准库导入
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import List, Optional
 
+# 第三方库导入
+from fastapi import APIRouter, Body, HTTPException, Path, Query
+from pydantic import BaseModel
+
+# 本地应用导入
+from app.utils.db import execute_query, execute_query_one, execute_update
 # 路由配置（前缀/reviews，标签“评价模块”，统一归类）
 router = APIRouter(
     prefix="/reviews",

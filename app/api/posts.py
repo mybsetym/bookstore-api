@@ -1,10 +1,15 @@
 # app/api/posts.py
-from fastapi import APIRouter, HTTPException, Query, Path, Body
+# 标准库导入
+from datetime import datetime, timezone
+
+# 第三方库导入
+from fastapi import APIRouter, Body, HTTPException, Path, Query
 from pydantic import BaseModel
+
+# 本地应用导入（核心模型 → 工具类）
 from app.core.schemas import CreatePostRequest, PostResponse
 from app.utils.db import execute_query, execute_query_one, execute_update
 from app.utils.notification_utils import send_interactive_notification
-from datetime import datetime, timezone
 
 router = APIRouter(
     prefix="/posts",
@@ -13,7 +18,7 @@ router = APIRouter(
 )
 
 
-# 新增评论请求模型
+# 评论请求模型
 class CreateCommentRequest(BaseModel):
     user_id: int
     content: str

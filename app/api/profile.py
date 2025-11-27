@@ -1,12 +1,17 @@
-from fastapi import APIRouter, HTTPException, Query, Body
+#app/api/profile.py
+# 标准库导入
 from typing import Optional
+
+# 第三方库导入（FastAPI 相关）
+from fastapi import APIRouter, Body, HTTPException, Query
+
+# 本地应用导入（数据库工具函数）
 from app.utils.db import (
+    execute_query,
     execute_query_one,
     execute_query_paginated,
     execute_update,
-    execute_query
 )
-
 router = APIRouter(
     prefix="/profile",
     tags=["个人中心模块"]

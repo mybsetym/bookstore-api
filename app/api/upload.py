@@ -1,9 +1,13 @@
 # app/api/upload.py
-from fastapi import APIRouter, UploadFile, File
+# 标准库导入
 import os
 from datetime import datetime
-# 导入全局配置的 UPLOAD_DIR
-from app.config import UPLOAD_DIR
+
+# 第三方库导入
+from fastapi import APIRouter, File, UploadFile
+
+# 本地应用导入
+from app.config import UPLOAD_DIR  # 导入全局配置的 UPLOAD_DIR
 
 
 router = APIRouter(prefix="/upload", tags=["文件上传"])

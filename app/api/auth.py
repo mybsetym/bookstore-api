@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException, Body
+#app/api/auth.py
+# 第三方库导入
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
-from app.utils.db import execute_query_one, execute_update
+
+# 本地应用导入
 from app.core.security import create_password_hash, verify_password
+from app.utils.db import execute_query_one, execute_update
 
 router = APIRouter(
     prefix="/auth",

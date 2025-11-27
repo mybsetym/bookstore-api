@@ -1,14 +1,21 @@
-import os
-from app.config import UPLOAD_DIR
+# C:\Users\myb13\Desktop\bookstore-api\app\main
+import logging  # 标准库导入
+
+# 第三方库导入
 from fastapi import FastAPI
-from app.api import search
-from app.api import auth, book, order, profile, school, products # 导入 product
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.im_router import router as im_router  # 导入IM路由
 from fastapi.staticfiles import StaticFiles
-from app.api import posts
-import logging
+
+# 本地应用导入
+# 1. 配置类
+from app.config import UPLOAD_DIR
+
+# 2. 核心模块
 from app.core.exception_handlers import register_exception_handlers
+
+# 3. API 路由
+from app.api import auth, book, order, posts, profile, products, school, search
+from app.api.im_router import router as im_router  # IM 独立路由
 
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("bookstore")

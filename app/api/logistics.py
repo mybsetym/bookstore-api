@@ -1,10 +1,16 @@
-import requests
+#app/api/logistics.py
+# 标准库导入
 import hashlib
 import json
-from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
-from app.config import settings  # 需配置快递100 API密钥
+import requests
 from typing import Optional
+
+# 第三方库导入
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
+
+# 本地应用导入
+from app.config import settings  # 需配置快递100 API密钥
 
 # 路由配置（前缀/logistics，标签“物流模块”，统一归类）
 router = APIRouter(

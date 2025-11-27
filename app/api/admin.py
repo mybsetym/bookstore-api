@@ -1,9 +1,16 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field, field_validator
-from app.utils.db import  execute_query_one, execute_update
+#app/api/admin.py
+# 标准库导入
 from datetime import datetime, timezone
 from typing import Optional
+
+# 第三方库导入
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field, field_validator
+
+# 本地应用导入
 from app.core.exceptions import PermissionDeniedError
+from app.utils.db import execute_query_one, execute_update
+
 # 路由配置
 router = APIRouter(
     prefix="/admin",

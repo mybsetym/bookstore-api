@@ -1,11 +1,16 @@
 # app/core/exception_handlers.py
-from fastapi import Request, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import HTTPException, RequestValidationError
-from app.core.exceptions import AppException
-from app.core.schemas import ErrorResponse
+# 标准库导入
 import logging
 import uuid
+
+# 第三方库导入
+from fastapi import Request, status
+from fastapi.exceptions import HTTPException, RequestValidationError
+from fastapi.responses import JSONResponse
+
+# 本地应用导入
+from app.core.exceptions import AppException
+from app.core.schemas import ErrorResponse
 
 # 初始化日志（独立配置，避免依赖 main.py）
 logging.basicConfig(

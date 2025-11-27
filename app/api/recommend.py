@@ -1,8 +1,14 @@
-from fastapi import APIRouter, Query, HTTPException, Depends
-from pydantic import BaseModel
-from app.utils.db import execute_query, execute_query_one
-from typing import Optional, List, Dict, Set
+#app/api/recommend.py
+# 标准库导入
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Set
+
+# 第三方库导入
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+
+# 本地应用导入（工具类模块）
+from app.utils.db import execute_query, execute_query_one
 
 # 路由配置
 router = APIRouter(

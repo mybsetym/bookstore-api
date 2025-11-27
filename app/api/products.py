@@ -1,13 +1,20 @@
-from fastapi import APIRouter, Query, Path, Body, HTTPException
+#app/api/products.py
+# 标准库导入
+from datetime import datetime, timezone
 from typing import Optional
+
+# 第三方库导入（FastAPI 相关）
+from fastapi import APIRouter, Body, HTTPException, Path, Query
+
+# 本地应用导入（核心异常 → 数据库工具）
+from app.core.exceptions import ResourceNotFoundError
 from app.utils.db import (
     execute_query,
     execute_query_one,
     execute_query_paginated,
     execute_update,
 )
-from datetime import datetime, timezone
-from app.core.exceptions import ResourceNotFoundError
+
 router = APIRouter(
     prefix="/products",  # 接口前缀统一为 /products
     tags=["商品模块"],  # 归类到“商品模块”，文档更清晰

@@ -1,14 +1,19 @@
-from fastapi import APIRouter, Query, Body, HTTPException
-from fastapi import Path
-from typing import Optional
+#app/api/users.py
+# 标准库导入（按模块名字母序排列）
+from datetime import datetime
 import hashlib
+from typing import Optional
+
+# 第三方库导入（合并FastAPI导入，按导入项字母序排列）
+from fastapi import APIRouter, Body, HTTPException, Path, Query
+
+# 本地应用导入（按模块层级+字母序：核心异常 → 工具类）
+from app.core.exceptions import DuplicateDataError
 from app.utils.db import (
     execute_query_one,
+    execute_query_paginated,
     execute_update,
-    execute_query_paginated
 )
-from datetime import datetime
-from app.core.exceptions import DuplicateDataError
 
 router = APIRouter(
     prefix="/users",

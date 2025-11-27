@@ -1,10 +1,12 @@
 # app/core/dependencies.py
-
-from app.config import settings
-from app.utils.db import execute_query_one  # 从你修改后的 db.py 中导入查询函数
+# 第三方库导入
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
+
+# 本地应用导入
+from app.config import settings
+from app.utils.db import execute_query_one  # 从 db.py 中导入查询函数
 
 # 定义 Token 的获取方式，这里假设你的登录接口在 /api/v1/auth/token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token")

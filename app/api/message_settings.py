@@ -1,12 +1,15 @@
 # app/api/message_settings.py
+# 第三方库导入（FastAPI 相关）
 from fastapi import APIRouter, Depends, HTTPException
-from app.utils.db import execute_query_one, execute_update
-from app.core.security import get_current_user  # 你的用户登录校验依赖
+
+# 本地应用导入（核心模型 → 核心安全 → 工具类）
 from app.core.schemas import (
+    AutoReplyUpdate,
     UserMessageSettingsOut,
     UserMessageSettingsUpdate,
-    AutoReplyUpdate
 )
+from app.core.security import get_current_user  # 你的用户登录校验依赖
+from app.utils.db import execute_query_one, execute_update
 
 router = APIRouter(prefix="/message-settings", tags=["消息设置"])
 

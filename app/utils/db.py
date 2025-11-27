@@ -1,8 +1,8 @@
+# app/utils/db.py
 import pymysql
 import databases
-from pymysql.cursors import DictCursor
 from app.config import settings  # 假设你的配置文件在 app/config.py
-
+from pymysql.cursors import DictCursor
 
 def get_db_connection():
     """建立并返回一个数据库连接"""
