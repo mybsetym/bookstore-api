@@ -1,7 +1,6 @@
 import os
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
-
 # 加载 .env 文件（保持不变）
 load_dotenv()
 
@@ -31,8 +30,8 @@ class Settings(BaseSettings):
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_PORT: int = int(os.getenv("DB_PORT", 3306))
     DB_USER: str = os.getenv("DB_USER", "root")
-    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "your_strong_password")
-    DB_NAME: str = os.getenv("DB_NAME", "second_hand_book_db")
+    DB_PASSWORD: str = os.getenv("DB_PASSWORD", "MyB202853@")
+    DB_NAME: str = os.getenv("DB_NAME", "bookstore")
 
     # JWT 配置（保持不变）
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "a_very_weak_secret_key_for_development_only")

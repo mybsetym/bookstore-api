@@ -1,4 +1,5 @@
 import os
+from app.config import UPLOAD_DIR
 from fastapi import FastAPI
 from app.api import search
 from app.api import auth, book, order, profile, school, products # 导入 product
@@ -37,6 +38,7 @@ app.include_router(im_router)
 app.include_router(products.router)
 app.include_router(posts.router)
 # app/main.py（确保已挂载static）
+
 
 app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")
 # 健康检查
