@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Body, Path, HTTPException, Query
+from fastapi import APIRouter,  Path, HTTPException, Query
 from pydantic import BaseModel
 from app.utils.db import execute_query, execute_query_one, execute_update
 from datetime import datetime, timezone
 from typing import Optional
+# 新增：导入通知工具
+from app.utils.notification_utils import send_book_notification
 
 # 创建路由实例（前缀统一为/orders，标签归类为“订单模块”，方便文档区分）
 router = APIRouter(
@@ -277,6 +279,33 @@ def update_order_status(req: UpdateOrderStatusRequest):
     update_sql += " WHERE order_id = %s"
     update_params.append(req.order_id)
     execute_update(update_sql, update_params)
+
+    # 新增：查询订单信息（用于通知）
+    order_info = execute_query_one(
+        sql="""
+            SELECT o.buyer_id, b.book_name
+            FROM orders o
+                     LEFT JOIN book b ON o.product_id = b.book_id
+            WHERE o.order_id = %s
+            """,
+        params=(req.order_id,)
+    )
+    buyer_id = order_info["buyer_id"]
+    book_name = order_info["book_name"]
+
+    # 新增：状态与通知内容映射（适配原有状态流转）
+    status_content_map = {
+        "pending_ship": f"你的订单《{book_name}》已付款，卖家将尽快处理~",
+        "pending_receive": f"你的订单《{book_name}》已发货，请注意查收！",
+        "completed": f"你的订单《{book_name}》已完成，交易成功！",
+        "cancelled": f"你的订单《{book_name}》已取消，如有疑问可联系客服~"
+    }
+    if req.status in status_content_map:
+        send_book_notification(
+            user_id=buyer_id,
+            content=status_content_map[req.status],
+            business_id=req.order_id
+        )
 
     return {
         "code": 200,

@@ -1,9 +1,7 @@
-# app/api/auth.py
-
 from fastapi import APIRouter, HTTPException, Body
-# 正确导入所需的函数
+from pydantic import BaseModel
 from app.utils.db import execute_query_one, execute_update
-import hashlib
+from app.core.security import create_password_hash, verify_password
 
 router = APIRouter(
     prefix="/auth",
@@ -11,73 +9,100 @@ router = APIRouter(
 )
 
 
-@router.post("/register", summary="用户注册")
-def register(
-        phone: str = Body(..., description="手机号（必填）", min_length=11, max_length=11),
-        email: str = Body(..., description="邮箱（必填）"),
-        password: str = Body(..., description="密码（必填，至少6位）")
-):
-    # 检查手机号是否已注册
-    existing_phone = execute_query_one("SELECT ID FROM logindata WHERE phone = %s", (phone,))
-    if existing_phone:
-        raise HTTPException(status_code=400, detail="手机号已被注册")
+# 注册请求模型
+class RegisterRequest(BaseModel):
+    username: str
+    password: str
+    email: str
+    nickname: str = None
+    school_id: int = None
 
-    # 检查邮箱是否已注册
-    existing_email = execute_query_one("SELECT ID FROM logindata WHERE email = %s", (email,))
-    if existing_email:
-        raise HTTPException(status_code=400, detail="邮箱已被注册")
 
-    # 密码 MD5 加密（生产环境建议用 bcrypt）
-    hashed_password = hashlib.md5(password.encode()).hexdigest()
-
-    # 插入 logindata 表
-    sql = """
-          INSERT INTO logindata (phone, email, password)
-          VALUES (%s, %s, %s) \
-          """
-    # 昵称默认和用户名一致
-    execute_update(sql, (phone, email, hashed_password))
-
-    # 获取新增用户的ID
-    new_user = execute_query_one("SELECT ID FROM logindata WHERE phone = %s", (phone,))
-    user_id = new_user["ID"]
-
-    # 新增：在 users 表中创建对应的用户档案记录
-    # 默认昵称可以设为手机号的后四位，或一个通用名称
-    default_nickname = f"用户{phone[-4:]}"
-    execute_update(
-        "INSERT INTO users (user_id, nickname) VALUES (%s, %s)",
-        (user_id, default_nickname)
+def init_user_message_settings(user_id: int):
+    """初始化用户消息设置（默认开启易书通知，其他开关关闭）"""
+    existing = execute_query_one(
+        "SELECT id FROM user_message_settings WHERE user_id = %s",
+        (user_id,)
     )
+    if not existing:
+        execute_update(
+            sql="""
+                INSERT INTO user_message_settings (user_id, receive_book_notice, interactive_msg_switch,
+                                                   system_notice_switch, follow_update_switch, auto_reply_switch,
+                                                   auto_reply_content, create_time)
+                VALUES (%s, 1, 0, 0, 0, 0, '亲，我现在不在，喜欢可以拍下~', NOW())
+                """,
+            params=(user_id,)
+        )
 
+
+@router.post("/register", summary="用户注册")
+def user_register(req: RegisterRequest):
+    # 1. 校验用户名/邮箱是否已存在
+    existing_user = execute_query_one(
+        sql="SELECT user_id FROM users WHERE username = %s OR email = %s",
+        params=(req.username, req.email)
+    )
+    if existing_user:
+        raise HTTPException(status_code=400, detail="用户名或邮箱已被注册")
+
+    # 2. 密码加密（使用安全模块的加密函数）
+    hashed_pwd = create_password_hash(req.password)
+
+    # 3. 插入用户到数据库
+    execute_update(
+        sql="""
+            INSERT INTO users (username, password, email, nickname, school_id,
+                               avg_rating, review_count, is_active, is_admin, create_time)
+            VALUES (%s, %s, %s, %s, %s, 5.0, 0, 1, 0, NOW())
+            """,
+        params=(req.username, hashed_pwd, req.email, req.nickname, req.school_id)
+    )
+    user_id = execute_query_one("SELECT LAST_INSERT_ID() AS id")["id"]
+
+    # 4. 初始化用户消息设置
+    init_user_message_settings(user_id)
+
+    # 5. 返回注册结果
     return {
         "code": 200,
         "message": "注册成功",
         "data": {
             "user_id": user_id,
-            "phone": phone,
-            "email": email
+            "username": req.username,
+            "email": req.email,
+            "nickname": req.nickname or req.username,
+            "school_id": req.school_id
         }
     }
 
 
 @router.post("/login", summary="用户登录")
 def login(
-        identifier: str = Body(..., description="手机号或邮箱"),
+        identifier: str = Body(..., description="用户名或邮箱"),
         password: str = Body(..., description="密码")
 ):
-    hashed_password = hashlib.md5(password.encode()).hexdigest()
-
-    # 同时匹配手机号或邮箱
+    # 1. 先通过用户名/邮箱查询用户（包含存储的哈希密码）
     user = execute_query_one(
-        "SELECT ID, phone, email FROM logindata WHERE (phone = %s OR email = %s) AND password = %s",
-        (identifier, identifier, hashed_password)
+        "SELECT user_id, username, email, nickname, password FROM users WHERE username = %s OR email = %s",
+        (identifier, identifier)
     )
     if not user:
-        raise HTTPException(status_code=401, detail="手机号/邮箱或密码错误")
+        raise HTTPException(status_code=401, detail="用户名/邮箱或密码错误")
 
+    # 2. 验证密码（明文密码 vs 数据库存储的哈希密码）
+    if not verify_password(password, user["password"]):
+        raise HTTPException(status_code=401, detail="用户名/邮箱或密码错误")
+
+    # 3. 返回用户信息（排除密码字段）
+    user_data = {
+        "user_id": user["user_id"],
+        "username": user["username"],
+        "email": user["email"],
+        "nickname": user["nickname"]
+    }
     return {
         "code": 200,
         "message": "登录成功",
-        "data": user
+        "data": user_data
     }

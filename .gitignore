@@ -39,3 +39,15 @@ Thumbs.db
 # 日志文件
 logs/
 *.log
+
+# 类型检查缓存
+.mypy_cache/       # mypy 类型检查缓存
+.pytype/           # pytype 类型检查缓存
+
+# 数据库相关（如果用 SQLite 等本地数据库）
+*.db               # SQLite 数据库文件
+*.sqlite           # SQLite 数据库文件
+*.db-journal       # 数据库日志文件
+
+# 临时文件
+*.tmp

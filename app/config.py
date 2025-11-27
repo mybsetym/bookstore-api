@@ -44,9 +44,13 @@ class Settings(BaseSettings):
 
     # 其他配置（保持不变）
     DEBUG: bool = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
+    #腾讯云配置
+    TENCENT_IM_SECRET_ID: str  # 之前已添加的
+    TENCENT_IM_SECRET_KEY: str  # 补充这一行（关键）
+    TENCENT_IM_SDK_APP_ID: str  # 确保也有这个
 
     class Config:
         case_sensitive = True  # 区分大小写
-
+        env_file = ".env"
 # 创建配置实例（保持不变）
 settings = Settings()
