@@ -1,6 +1,6 @@
 # app/core/exceptions.py
 from fastapi import status
-from pydantic import BaseModel
+
 
 class AppException(Exception):
     """系统基础异常类，所有自定义异常继承此类"""

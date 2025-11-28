@@ -4,7 +4,6 @@ from typing import Dict, List
 
 # 第三方库导入
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
-from tencentcloud.clb.v20180317.models import Listener
 
 # 本地应用导入
 from app.services.im_service import IMService
