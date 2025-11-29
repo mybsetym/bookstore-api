@@ -27,8 +27,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def create_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
-
+    # 关键：必须使用截断后的密码进行哈希
+    truncated_pwd = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    return pwd_context.hash(truncated_pwd)  # 这里必须传入 truncated_pwd，而非原始 password
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)

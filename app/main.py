@@ -12,6 +12,7 @@ from app.config import UPLOAD_DIR
 
 # 2. 核心模块
 from app.core.exception_handlers import register_exception_handlers
+from app.utils.db_check import check_db_connection
 
 # 3. API 路由
 from app.api import auth, book, order, posts, profile, products, school, search
@@ -21,7 +22,7 @@ logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger("bookstore")
 app = FastAPI(
     title="图书商城API",
-    description="适配现有数据库表结构的后端接口",
+    description="适配数据库表结构的后端接口",
     version="1.3.1"
 )
 
@@ -46,6 +47,13 @@ app.include_router(products.router)
 app.include_router(posts.router)
 # app/main.py（确保已挂载static）
 
+# ------------- 启动时自动执行数据库检测 -------------
+db_check_success, db_check_msg = check_db_connection()
+# 如果数据库连接失败，可选择直接退出（可选）
+if not db_check_success:
+    import sys
+    logger.error("💥 数据库连接检测失败，应用启动终止！")
+    sys.exit(1)  # 非0退出码表示启动失败
 
 app.mount("/static", StaticFiles(directory=UPLOAD_DIR), name="static")
 # 健康检查

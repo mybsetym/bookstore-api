@@ -16,7 +16,7 @@ def send_notification(
     :param user_id: 接收通知的用户ID
     :param notify_type: 通知类型（对应开关字段）：interact(互动)/system(系统)/book(易书)/follow(关注上新)
     :param content: 通知内容
-    :param business_id: 关联业务ID（如订单ID、帖子ID）
+    :param business_id: 关联业务ID
     """
     # 1. 校验用户对应的通知开关（根据类型映射开关字段）
     switch_field_map = {

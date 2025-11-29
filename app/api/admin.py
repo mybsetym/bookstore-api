@@ -51,7 +51,7 @@ class AuditRequest(BaseModel):
         return v
 
 # --------------------------
-# 辅助函数 (已优化命名)
+# 辅助函数 (优化命名)
 # --------------------------
 def verify_admin_permission(admin_id: int):
     """Verify if the user has admin permission (role = 'admin')"""
@@ -70,7 +70,7 @@ def audit_target(req: AuditRequest):
     # 步骤1：校验管理员权限
     verify_admin_permission(req.admin_id) # 使用优化后的函数名
 
-    # ... (后续逻辑与之前版本完全相同) ...
+    # (后续逻辑与之前完全相同)
     audit_config = {
         "product": {
             "table": "book", "status_field": "status", "pending_status": "pending_audit",
@@ -113,4 +113,4 @@ def audit_target(req: AuditRequest):
         "data": {"target_id": req.target_id, "new_status": new_status}
     }
 
-# ... (省略其他接口，它们也需要将调用 `verify_admin权限` 的地方改为 `verify_admin_permission`) ...
+# ... (省略其他接口，它们也需要将调用 `verify_admin` 改为 `verify_admin_permission`) ...
