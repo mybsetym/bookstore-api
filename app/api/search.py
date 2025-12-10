@@ -1,7 +1,7 @@
 # app/api/search.py
-from fastapi import APIRouter, Query
-from app.utils.db import execute_query, execute_query_paginated
-
+from fastapi import APIRouter, Query, HTTPException
+from app.utils.db import  execute_query_paginated,get_db_connection
+import pymysql
 router = APIRouter(
     prefix="/search",
     tags=["搜索与筛选模块"]
@@ -61,11 +61,37 @@ def search_books(
 
 @router.get("/categories", summary="获取所有图书分类（用于筛选下拉框）")
 def get_book_categories():
-    """返回去重后的图书分类，供前端筛选组件使用"""
-    sql = "SELECT DISTINCT category FROM book ORDER BY category"
-    categories = execute_query(sql)
-    return {
-        "code": 200,
-        "message": "获取成功",
-        "data": [item["category"] for item in categories]
-    }
+    conn = None  # 提前初始化conn，避免finally中变量未定义
+    cursor = None
+    try:
+        # 1. 建立数据库连接
+        conn = get_db_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)  # 这里要确保pymysql已导入
+
+        # 2. 关联查询分类名称（核心逻辑正确，保留）
+        sql = """
+        SELECT DISTINCT c.name AS category
+        FROM book b
+        LEFT JOIN categories c ON b.category_id = c.id
+        WHERE c.name IS NOT NULL  # 过滤无分类的书籍
+        ORDER BY c.name
+        """
+        cursor.execute(sql)
+        result = cursor.fetchall()
+
+        # 3. 提取分类列表
+        categories = [item["category"] for item in result]
+        return categories  # FastAPI会自动转为JSON响应
+
+    except pymysql.MySQLError as e:
+        # 数据库相关错误，返回500状态码+错误信息
+        raise HTTPException(status_code=500, detail=f"数据库查询失败：{str(e)}")
+    except Exception as e:
+        # 其他未知错误
+        raise HTTPException(status_code=500, detail=f"系统错误：{str(e)}")
+    finally:
+        # 安全关闭资源：判断cursor/conn是否存在再关闭
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

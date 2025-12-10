@@ -34,7 +34,7 @@ class BookBase(BaseModel):
     author: str
     publisher: Optional[str] = None
     publish_date: Optional[str] = None
-    category: str
+    category_id: int
     price: float
     condition: str  # 使用 'condition_' 避免与 SQL 关键字冲突，或者在 SQL 中用反引号包裹
     book_desc: Optional[str] = None

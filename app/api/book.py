@@ -22,10 +22,10 @@ def get_books(
         sql += " AND category = %s"
         params.append(category)
     if seller_id:
-        sql += " AND seller_ID = %s"
+        sql += " AND seller_id = %s"
         params.append(seller_id)
     if school_id:  # 新增学校筛选（关联卖家的学校）
-        sql += " AND seller_ID IN (SELECT user_id FROM users WHERE school_id = %s)"
+        sql += " AND seller_id IN (SELECT user_id FROM users WHERE school_id = %s)"
         params.append(school_id)
     sql += " ORDER BY create_time DESC"
     result = execute_query_paginated(sql, params, page, page_size)

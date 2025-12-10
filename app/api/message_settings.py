@@ -16,15 +16,24 @@ router = APIRouter(prefix="/message-settings", tags=["消息设置"])
 
 # 初始化用户消息设置（用户注册时/首次获取时自动创建）
 def init_user_message_settings(user_id: int):
-    existing = execute_query_one(
-        "SELECT * FROM user_message_settings WHERE user_id = %s",
-        (user_id,)
-    )
-    if not existing:
-        execute_update(
-            sql="INSERT INTO user_message_settings (user_id) VALUES (%s)",
-            params=(user_id,)
+    try:
+        existing = execute_query_one(
+            "SELECT id FROM user_message_settings WHERE user_id = %s",
+            (user_id,)
         )
+        if not existing:
+            execute_update(
+                sql="""
+                    INSERT INTO user_message_settings (user_id, receive_book_notice, interactive_msg_switch,
+                                                       system_notice_switch, follow_update_switch, auto_reply_switch,
+                                                       auto_reply_content, create_time)
+                    VALUES (%s, 1, 0, 0, 0, 0, '亲，我现在不在，喜欢可以拍下~', NOW())
+                    """,
+                params=(user_id,)
+            )
+    except Exception as e:
+        print(f"初始化用户消息设置失败，用户ID: {user_id}，错误: {str(e)}")
+        raise
 
 
 # 1. 获取用户消息设置

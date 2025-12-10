@@ -57,7 +57,7 @@ def create_order(req: CreateOrderRequest):
     """
     # 步骤1：校验商品状态与库存
     product = execute_query_one(
-        "SELECT b.book_id, b.seller_ID, b.price, b.stock, b.status "
+        "SELECT b.book_id, b.seller_id, b.price, b.stock, b.status "
         "FROM book b WHERE b.book_id = %s",
         (req.product_id,)
     )
@@ -90,7 +90,7 @@ def create_order(req: CreateOrderRequest):
                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) \
                  """
     insert_params = (
-        order_no, req.buyer_id, product["seller_ID"], req.product_id, req.quantity, total_amount,
+        order_no, req.buyer_id, product["seller_id"], req.product_id, req.quantity, total_amount,
         req.fulfillment_type, req.pickup_location_id, req.receiver_name, req.receiver_phone, req.receiver_address,
         req.remark, "pending_pay", now, now
     )

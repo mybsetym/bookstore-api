@@ -42,20 +42,24 @@ class PhoneRegisterRequest(BaseModel):
 # ------------------------------ 工具函数 ------------------------------
 def init_user_message_settings(user_id: int):
     """初始化用户消息设置（复用auth.py的逻辑）"""
-    existing = execute_query_one(
-        "SELECT id FROM user_message_settings WHERE user_id = %s",
-        (user_id,)
-    )
-    if not existing:
-        execute_update(
-            sql="""
-                INSERT INTO user_message_settings (user_id, receive_book_notice, interactive_msg_switch,
-                                                   system_notice_switch, follow_update_switch, auto_reply_switch,
-                                                   auto_reply_content, create_time)
-                VALUES (%s, 1, 0, 0, 0, 0, '亲，我现在不在，喜欢可以拍下~', NOW())
-                """,
-            params=(user_id,)
+    try:
+        existing = execute_query_one(
+            "SELECT id FROM user_message_settings WHERE user_id = %s",
+            (user_id,)
         )
+        if not existing:
+            execute_update(
+                sql="""
+                    INSERT INTO user_message_settings (user_id, receive_book_notice, interactive_msg_switch,
+                                                       system_notice_switch, follow_update_switch, auto_reply_switch,
+                                                       auto_reply_content, create_time)
+                    VALUES (%s, 1, 0, 0, 0, 0, '亲，我现在不在，喜欢可以拍下~', NOW())
+                    """,
+                params=(user_id,)
+            )
+    except Exception as e:
+        print(f"初始化用户消息设置失败，用户ID: {user_id}，错误: {str(e)}")
+        raise
 
 # ------------------------------ 接口实现 ------------------------------
 @router.post("/register/email", summary="【用户模块】邮箱注册")
@@ -92,7 +96,15 @@ def email_register(req: EmailRegisterRequest):
     )
 
     # 5. 获取自增ID并生成昵称
-    user_id = execute_query_one("SELECT LAST_INSERT_ID() AS id")["id"]
+    # 由于execute_update和execute_query_one使用不同连接，LAST_INSERT_ID()可能返回0，所以直接查询用户
+    user = execute_query_one(
+        sql="SELECT user_id FROM users WHERE email = %s",
+        params=(req.email,)
+    )
+    if not user:
+        raise HTTPException(status_code=500, detail="用户注册失败")
+    
+    user_id = user["user_id"]
     nickname = f"用户{user_id}"
 
     # 6. 更新昵称字段
@@ -151,7 +163,15 @@ def phone_register(req: PhoneRegisterRequest):
     )
 
     # 5. 获取自增ID并生成昵称
-    user_id = execute_query_one("SELECT LAST_INSERT_ID() AS id")["id"]
+    # 由于execute_update和execute_query_one使用不同连接，LAST_INSERT_ID()可能返回0，所以直接查询用户
+    user = execute_query_one(
+        sql="SELECT user_id FROM users WHERE phone = %s",
+        params=(req.phone,)
+    )
+    if not user:
+        raise HTTPException(status_code=500, detail="用户注册失败")
+    
+    user_id = user["user_id"]
     nickname = f"用户{user_id}"
 
     # 6. 更新昵称字段

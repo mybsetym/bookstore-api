@@ -1,4 +1,9 @@
-#app/api/recommend.py
+# app/api/recommend.py
+"""
+推荐系统核心接口
+- 基于同校热门、用户偏好、协同过滤、全局热门的多维度推荐
+- 所有硬编码值已替换为全局常量，类型安全且易维护
+"""
 # 标准库导入
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set
@@ -7,8 +12,13 @@ from typing import Dict, List, Optional, Set
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-# 本地应用导入（工具类模块）
+# 本地应用导入
 from app.utils.db import execute_query, execute_query_one
+from app.core.constants import (
+    BookStatus,
+    RecommendConfig,
+    OrderStatus,
+)
 
 # 路由配置
 router = APIRouter(
@@ -24,13 +34,17 @@ router = APIRouter(
 class RecommendationRequest(BaseModel):
     """获取推荐的请求参数"""
     user_id: int = Query(..., description="请求推荐的用户ID")
-    limit: int = Query(10, ge=1, le=50, description="请求推荐的商品数量，默认10个")
+    limit: int = Query(
+        RecommendConfig.DEFAULT_LIMIT,
+        ge=RecommendConfig.MIN_LIMIT,
+        le=RecommendConfig.MAX_LIMIT,
+        description=f"请求推荐的商品数量，默认{RecommendConfig.DEFAULT_LIMIT}个，范围[{RecommendConfig.MIN_LIMIT}-{RecommendConfig.MAX_LIMIT}]"
+    )
 
 
 # --------------------------
 # 辅助函数
 # --------------------------
-
 def get_user_school_id(user_id: int) -> Optional[int]:
     """获取用户所在的学校ID"""
     result = execute_query_one(
@@ -45,12 +59,12 @@ def get_school_popular_products(school_id: int, limit: int) -> List[dict]:
           SELECT b.book_id, b.book_name, b.cover_img, b.price, b.seller_ID, b.view
           FROM book b
                    JOIN users u ON b.seller_ID = u.user_id
-          WHERE u.school_id = %s \
-            AND b.status = 'online'
+          WHERE u.school_id = %s 
+            AND b.status = %s  # 使用图书上架状态常量
           ORDER BY b.view DESC
               LIMIT %s
           """
-    return execute_query(sql, (school_id, limit))
+    return execute_query(sql, (school_id, BookStatus.ONLINE.value, limit))
 
 
 def get_user_preferred_categories(user_id: int) -> List[int]:
@@ -61,28 +75,26 @@ def get_user_preferred_categories(user_id: int) -> List[int]:
     # 1. 购买行为 (权重: 3)
     purchased_categories_sql = """
                                SELECT b.category_id, COUNT(*) as count
-                               FROM orders o JOIN book b \
+                               FROM orders o JOIN book b 
                                ON o.product_id = b.book_id
-                               WHERE o.buyer_id = %s \
-                                 AND o.create_time \
-                                   > %s \
-                                 AND o.status = 'completed'
-                               GROUP BY b.category_id \
-                               ORDER BY count DESC \
+                               WHERE o.buyer_id = %s 
+                                 AND o.create_time > %s 
+                                 AND o.status = %s  # 使用订单完成状态常量
+                               GROUP BY b.category_id 
+                               ORDER BY count DESC 
                                """
-    for cat in execute_query(purchased_categories_sql, (user_id, six_months_ago)):
+    for cat in execute_query(purchased_categories_sql, (user_id, six_months_ago, OrderStatus.COMPLETED.value)):
         preference_scores[cat['category_id']] = preference_scores.get(cat['category_id'], 0) + cat['count'] * 3
 
     # 2. 评价行为 (权重: 2)
     reviewed_categories_sql = """
                               SELECT b.category_id, COUNT(*) as count
-                              FROM reviews r JOIN book b \
+                              FROM reviews r JOIN book b 
                               ON r.product_id = b.book_id
-                              WHERE r.reviewer_id = %s \
-                                AND r.create_time \
-                                  > %s
-                              GROUP BY b.category_id \
-                              ORDER BY count DESC \
+                              WHERE r.reviewer_id = %s 
+                                AND r.create_time > %s
+                              GROUP BY b.category_id 
+                              ORDER BY count DESC 
                               """
     for cat in execute_query(reviewed_categories_sql, (user_id, six_months_ago)):
         preference_scores[cat['category_id']] = preference_scores.get(cat['category_id'], 0) + cat['count'] * 2
@@ -92,8 +104,11 @@ def get_user_preferred_categories(user_id: int) -> List[int]:
     return [cat_id for cat_id, _ in sorted_preferences]
 
 
-def get_popular_products_in_categories(category_ids: List[int], limit: int, exclude_seller_id: Optional[int] = None) -> \
-List[dict]:
+def get_popular_products_in_categories(
+    category_ids: List[int],
+    limit: int,
+    exclude_seller_id: Optional[int] = None
+) -> List[dict]:
     """根据分类ID列表，获取这些分类下最受欢迎的商品"""
     params = []
     category_conditions = "1=1"
@@ -111,30 +126,36 @@ List[dict]:
     SELECT b.book_id, b.book_name, b.cover_img, b.price, b.seller_ID,
            COUNT(o.product_id) as sales_count
     FROM book b
-    LEFT JOIN orders o ON b.book_id = o.product_id AND o.status = 'completed'
-    WHERE b.status = 'online' AND {category_conditions} AND {seller_condition}
+    LEFT JOIN orders o ON b.book_id = o.product_id AND o.status = %s  # 使用订单完成状态常量
+    WHERE b.status = %s  # 使用图书上架状态常量
+      AND {category_conditions} 
+      AND {seller_condition}
     GROUP BY b.book_id, b.book_name, b.cover_img, b.price, b.seller_ID
     ORDER BY sales_count DESC, b.view DESC
     LIMIT %s
     """
-    params.append(limit)
+    # 补充状态常量和limit参数
+    params.extend([OrderStatus.COMPLETED.value, BookStatus.ONLINE.value, limit])
     return execute_query(sql, tuple(params))
 
 
 def get_collaborative_filtering_recommendations(user_id: int, limit: int) -> List[dict]:
-    """(简化版) 协同过滤推荐"""
+    """(简化版) 协同过滤推荐：基于相似用户购买行为"""
     # 1. 找到与该用户购买过至少一件相同商品的用户
     similar_users_sql = """
                         SELECT DISTINCT o2.buyer_id as similar_user_id
-                        FROM orders o1 \
+                        FROM orders o1 
                                  JOIN orders o2 ON o1.product_id = o2.product_id
-                        WHERE o1.buyer_id = %s \
-                          AND o2.buyer_id != %s \
-                          AND o1.status = 'completed' \
-                          AND o2.status = 'completed'
-                            LIMIT 10 \
+                        WHERE o1.buyer_id = %s 
+                          AND o2.buyer_id != %s 
+                          AND o1.status = %s  # 使用订单完成状态常量
+                          AND o2.status = %s  # 使用订单完成状态常量
+                        LIMIT 10 
                         """
-    similar_users = execute_query(similar_users_sql, (user_id, user_id))
+    similar_users = execute_query(
+        similar_users_sql,
+        (user_id, user_id, OrderStatus.COMPLETED.value, OrderStatus.COMPLETED.value)
+    )
     if not similar_users:
         return []
 
@@ -145,30 +166,34 @@ def get_collaborative_filtering_recommendations(user_id: int, limit: int) -> Lis
     cf_recommendations_sql = f"""
     SELECT DISTINCT b.book_id, b.book_name, b.cover_img, b.price, b.seller_ID
     FROM orders o JOIN book b ON o.product_id = b.book_id
-    WHERE o.buyer_id IN ({placeholders}) AND o.status = 'completed'
-    AND b.book_id NOT IN (SELECT product_id FROM orders WHERE buyer_id = %s AND status = 'completed')
+    WHERE o.buyer_id IN ({placeholders}) AND o.status = %s
+    AND b.book_id NOT IN (SELECT product_id FROM orders WHERE buyer_id = %s AND status = %s)
+    AND b.status = %s  # 仅推荐上架商品
     LIMIT %s
     """
-    params = tuple(similar_user_ids) + (user_id, limit)
+    params = (
+        tuple(similar_user_ids) +
+        (OrderStatus.COMPLETED.value, user_id, OrderStatus.COMPLETED.value, BookStatus.ONLINE.value, limit)
+    )
     return execute_query(cf_recommendations_sql, params)
 
 
 def get_global_trending_products(limit: int) -> List[dict]:
-    """获取平台全局热门商品"""
+    """获取平台全局热门商品（按销量+浏览量排序）"""
     sql = """
           SELECT b.book_id, b.book_name, b.cover_img, b.price, b.seller_ID
           FROM book b
-                   LEFT JOIN orders o ON b.book_id = o.product_id AND o.status = 'completed'
-          WHERE b.status = 'online'
+                   LEFT JOIN orders o ON b.book_id = o.product_id AND o.status = %s
+          WHERE b.status = %s
           GROUP BY b.book_id, b.book_name, b.cover_img, b.price, b.seller_ID
           ORDER BY COUNT(o.order_id) DESC, b.view DESC
-              LIMIT %s \
+              LIMIT %s 
           """
-    return execute_query(sql, (limit,))
+    return execute_query(sql, (OrderStatus.COMPLETED.value, BookStatus.ONLINE.value, limit))
 
 
 def enrich_products_with_seller_info(products: List[dict]):
-    """为商品列表添加卖家信息（昵称、头像）"""
+    """为商品列表添加卖家信息（昵称、头像），提升前端展示体验"""
     if not products:
         return products
 
@@ -194,7 +219,7 @@ def get_recommendations_for_user(req: RecommendationRequest = Depends()):
     """
     为指定用户生成个性化推荐列表 (结合版)。
     推荐策略 (按优先级排序)：
-    1. 【同校热门】：推荐用户所在学校的高浏览量商品。
+    1. 【同校热门】：推荐用户所在学校的高浏览量商品（占40%名额）。
     2. 【基于内容】：分析用户历史行为，推荐相似分类下的热门商品。
     3. 【协同过滤】：推荐与该用户相似的其他用户喜欢的商品。
     4. 【平台热门】：如果以上推荐仍不足，则用平台整体热门商品填充。
@@ -226,8 +251,11 @@ def get_recommendations_for_user(req: RecommendationRequest = Depends()):
     if remaining_slots > 0:
         preferred_categories = get_user_preferred_categories(user_id)
         if preferred_categories:
-            content_recs = get_popular_products_in_categories(preferred_categories, remaining_slots,
-                                                              exclude_seller_id=user_id)
+            content_recs = get_popular_products_in_categories(
+                preferred_categories,
+                remaining_slots,
+                exclude_seller_id=user_id
+            )
             for rec in content_recs:
                 if rec['book_id'] not in added_product_ids:
                     final_recommendations.append(rec)

@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Second-Hand Book Platform"
 
     # 数据库配置（保持不变）
-    DATABASE_URL: str = "mysql+asyncmy://root:MyB202853@@localhost:3306/app"
+    DATABASE_URL: str = "mysql+asyncmy://root:MyB202853@@localhost:3306/bookstore"
     DB_HOST: str = os.getenv("DB_HOST", "localhost")
     DB_PORT: int = int(os.getenv("DB_PORT", 3306))
     DB_USER: str = os.getenv("DB_USER", "root")

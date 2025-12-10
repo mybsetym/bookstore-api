@@ -48,7 +48,7 @@ def get_user_profile(user_id: int = Query(..., description="用户ID（logindata
         }
 
     # 3. 统计用户发布的图书数量
-    book_count_sql = "SELECT COUNT(*) AS count FROM book WHERE seller_ID = %s"
+    book_count_sql = "SELECT COUNT(*) AS count FROM book WHERE seller_id = %s"
     book_count = execute_query_one(book_count_sql, (user_id,))["count"]
 
     # 4. 统计用户的订单数量（作为买家）

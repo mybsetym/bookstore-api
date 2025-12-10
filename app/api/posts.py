@@ -38,7 +38,7 @@ class CommentResponse(BaseModel):
 def create_post(req: CreatePostRequest):
     # 1. 校验用户存在（users表主键是id，和之前posts表外键一致）
     user = execute_query_one(
-        sql="SELECT id, username AS nickname, avatar FROM users WHERE id = %s",
+        sql="SELECT user_id, username AS nickname, avatar FROM users WHERE user_id = %s",
         params=(req.user_id,)
     )
     if not user:
