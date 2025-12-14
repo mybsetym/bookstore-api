@@ -221,7 +221,6 @@ class SchoolOut(BaseModel):
     """学校信息返回模型"""
     school_id: int
     school_name: str
-    city: Optional[str] = None
     address: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

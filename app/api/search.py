@@ -41,7 +41,7 @@ def search_books(
         sql += " AND b.category = %s"
         params.append(category)
     if condition:
-        sql += " AND b.condition = %s"
+        sql += " AND b.`condition` = %s"
         params.append(condition)
     if school_id:
         sql += " AND u.school_id = %s"

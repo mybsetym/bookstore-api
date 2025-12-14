@@ -193,7 +193,7 @@ def update_product(
         update_fields.append("stock = %s")
         params.append(stock)
     if condition is not None:
-        update_fields.append("condition = %s")
+        update_fields.append("`condition` = %s")
         params.append(condition)
     if cover_img is not None:
         update_fields.append("cover_img = %s")
@@ -202,7 +202,7 @@ def update_product(
         update_fields.append("book_desc = %s")
         params.append(book_desc)
     if status is not None:
-        update_fields.append("status = %s")
+        update_fields.append("`status` = %s")
         params.append(status)
 
     # 4. 执行更新（必须有更新字段才执行）

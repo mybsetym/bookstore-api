@@ -93,7 +93,7 @@ def execute_query_paginated(sql, params, page=1, page_size=10):
     paginated_sql = f"{sql} LIMIT %s OFFSET %s"
 
     # 执行查询获取数据
-    data_params = params + (page_size, offset)
+    data_params = tuple(params) + (page_size, offset)
     data = execute_query(paginated_sql, data_params)
 
     # 构建并执行 count SQL

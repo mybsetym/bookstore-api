@@ -19,32 +19,29 @@ router = APIRouter(
 
 
 @router.get("/info", summary="获取个人信息")
-def get_user_profile(user_id: int = Query(..., description="用户ID（logindata表中的ID）")):
+def get_user_profile(user_id: int = Query(..., description="用户ID（users表中的user_id）")):
     """
     获取用户的综合信息，包括：
-    - 从 logindata 表获取的登录信息（手机号、邮箱）。
-    - 从 users 表获取的详细资料（昵称、头像等）。
+    - 从 users 表获取的登录信息（手机号、邮箱）和详细资料（昵称、头像等）。
     - 统计信息（发布的图书数量、订单数量）。
     """
-    # 1. 检查用户是否存在于 logindata 表
-    login_sql = "SELECT ID, phone, email, create_time FROM logindata WHERE ID = %s"
-    login_info = execute_query_one(login_sql, (user_id,))
-    if not login_info:
+    # 1. 检查用户是否存在于 users 表
+    user_sql = "SELECT user_id, phone, email, create_time FROM users WHERE user_id = %s"
+    user_info = execute_query_one(user_sql, (user_id,))
+    if not user_info:
         raise HTTPException(status_code=404, detail="用户不存在")
 
-    # 2. 从 users 表获取详细资料
-    user_sql = "SELECT * FROM users WHERE user_id = %s"
-    user_detail = execute_query_one(user_sql, (user_id,))
+    # 2. 从 users 表获取详细资料（排除已获取的基本信息）
+    detail_sql = "SELECT nickname, avatar, school_id, avg_rating, review_count FROM users WHERE user_id = %s"
+    user_detail = execute_query_one(detail_sql, (user_id,))
     if not user_detail:
         # 如果 users 表中没有记录，返回一个默认结构
         user_detail = {
             "nickname": "",
-            "avatar_url": None,
-            "real_name": None,
-            "gender": None,
-            "birth_date": None,
-            "bio": None,
-            "default_shipping_address": None
+            "avatar": None,
+            "school_id": None,
+            "avg_rating": 5.0,
+            "review_count": 0
         }
 
     # 3. 统计用户发布的图书数量
@@ -60,10 +57,10 @@ def get_user_profile(user_id: int = Query(..., description="用户ID（logindata
         "code": 200,
         "message": "获取成功",
         "data": {
-            "user_id": user_id,
-            "phone": login_info["phone"],
-            "email": login_info["email"],
-            "register_time": login_info["create_time"],
+            "user_id": user_info["user_id"],
+            "phone": user_info["phone"],
+            "email": user_info["email"],
+            "register_time": user_info["create_time"],
             "profile": user_detail,
             "stats": {
                 "book_count": book_count,
@@ -76,8 +73,10 @@ def get_user_profile(user_id: int = Query(..., description="用户ID（logindata
 @router.put("/info", summary="更新个人信息")
 def update_user_profile(
         user_id: int = Query(..., description="用户ID"),
+        username: Optional[str] = Body(None, description="用户名"),
         nickname: Optional[str] = Body(None, description="昵称"),
-        avatar_url: Optional[str] = Body(None, description="头像URL"),
+        avatar: Optional[str] = Body(None, description="头像URL"),
+        school_id: Optional[int] = Body(None, description="学校ID"),
         gender: Optional[int] = Body(None, description="性别 (0:未知, 1:男, 2:女)"),
         birth_date: Optional[str] = Body(None, description="出生日期 (格式: YYYY-MM-DD)"),
         bio: Optional[str] = Body(None, description="个人简介")
@@ -87,7 +86,7 @@ def update_user_profile(
     所有字段均为可选，仅更新提供的字段。
     """
     # 1. 检查用户是否存在
-    check_sql = "SELECT ID FROM logindata WHERE ID = %s"
+    check_sql = "SELECT user_id FROM users WHERE user_id = %s"
     if not execute_query_one(check_sql, (user_id,)):
         raise HTTPException(status_code=404, detail="用户不存在")
 
@@ -95,12 +94,18 @@ def update_user_profile(
     update_fields = []
     params = []
 
+    if username is not None:
+        update_fields.append("username = %s")
+        params.append(username)
     if nickname is not None:
         update_fields.append("nickname = %s")
         params.append(nickname)
-    if avatar_url is not None:
-        update_fields.append("avatar_url = %s")
-        params.append(avatar_url)
+    if avatar is not None:
+        update_fields.append("avatar = %s")
+        params.append(avatar)
+    if school_id is not None:
+        update_fields.append("school_id = %s")
+        params.append(school_id)
     if gender is not None:
         if gender not in [0, 1, 2]:
             raise HTTPException(status_code=400, detail="性别值必须是 0, 1, 或 2")
@@ -131,11 +136,11 @@ def update_user_profile(
             nickname = f"用户{user_id}"
 
         sql = """
-              INSERT INTO users (user_id, nickname, avatar_url, gender, birth_date, bio)
-              VALUES (%s, %s, %s, %s, %s, %s) \
+              INSERT INTO users (user_id, username, nickname, avatar, school_id, gender, birth_date, bio)
+              VALUES (%s, %s, %s, %s, %s, %s, %s, %s) \
               """
         # 为 INSERT 构建参数，确保顺序正确
-        insert_params = [user_id, nickname, avatar_url, gender, birth_date, bio]
+        insert_params = [user_id, username, nickname, avatar, school_id, gender, birth_date, bio]
         execute_update(sql, insert_params)
 
     return {
@@ -171,11 +176,7 @@ def get_user_orders(
     sql = "SELECT * FROM orders WHERE buyer_id = %s ORDER BY create_time DESC"
     result = execute_query_paginated(sql, (user_id,), page, page_size)
 
-    # 为每个订单获取订单项详情
-    for order in result["data"]:
-        items_sql = "SELECT * FROM order_items WHERE order_id = %s"
-        order_items = execute_query(items_sql, (order["order_id"],))
-        order["items"] = order_items
+    # 项目订单模型为单表结构，订单详情已包含在orders表中，无需额外查询订单项
 
     return {
         "code": 200,

@@ -36,9 +36,9 @@ class CommentResponse(BaseModel):
 # 发布帖子（确保响应模型匹配）
 @router.post("/", summary="发布帖子", response_model=PostResponse)
 def create_post(req: CreatePostRequest):
-    # 1. 校验用户存在（users表主键是id，和之前posts表外键一致）
+    # 1. 校验用户存在（users表主键是user_id）
     user = execute_query_one(
-        sql="SELECT user_id, username AS nickname, avatar FROM users WHERE user_id = %s",
+        sql="SELECT user_id, nickname, avatar AS avatar FROM users WHERE user_id = %s",
         params=(req.user_id,)
     )
     if not user:
@@ -122,11 +122,11 @@ def get_post_detail(post_id: int = Path(..., ge=1)):
                    p.img_urls,
                    p.create_time,
                    p.status,
-                   u.username AS nickname,
-                   u.avatar,
+                   u.nickname,
+                   u.avatar AS avatar,
                    p.user_id
             FROM posts p
-                     LEFT JOIN users u ON p.user_id = u.id
+                     LEFT JOIN users u ON p.user_id = u.user_id
             WHERE p.post_id = %s
             """,
         params=(post_id,)

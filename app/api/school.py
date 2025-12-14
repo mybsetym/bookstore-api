@@ -11,7 +11,7 @@ router = APIRouter(
 @router.get("/list", summary="获取所有支持的学校列表")
 def get_school_list():
     """供用户选择/切换学校时调用"""
-    sql = "SELECT school_id, school_name, city FROM school WHERE status = 1 ORDER BY school_name"
+    sql = "SELECT school_id, school_name FROM school ORDER BY school_name"
     schools = execute_query(sql)
     return {
         "code": 200,
@@ -26,7 +26,7 @@ def bind_school(
         school_id: int = Query(..., description="学校ID（从学校列表获取）")
 ):
     # 1. 校验学校是否存在
-    school = execute_query_one("SELECT school_id FROM school WHERE school_id = %s AND status = 1", (school_id,))
+    school = execute_query_one("SELECT school_id FROM school WHERE school_id = %s", (school_id,))
     if not school:
         raise HTTPException(status_code=404, detail="该学校暂不支持")
 
@@ -37,7 +37,7 @@ def bind_school(
     )
 
     # 3. 返回绑定结果（含学校信息）
-    school_info = execute_query_one("SELECT school_name, city FROM school WHERE school_id = %s", (school_id,))
+    school_info = execute_query_one("SELECT school_name FROM school WHERE school_id = %s", (school_id,))
     return {
         "code": 200,
         "message": "学校绑定成功",
@@ -52,7 +52,7 @@ def bind_school(
 @router.get("/current", summary="获取用户当前绑定的学校")
 def get_current_school(user_id: int = Query(..., description="用户ID")):
     sql = """
-          SELECT s.school_id, s.school_name, s.city
+          SELECT s.school_id, s.school_name
           FROM users u
                    LEFT JOIN school s ON u.school_id = s.school_id
           WHERE u.user_id = %s \
@@ -61,5 +61,5 @@ def get_current_school(user_id: int = Query(..., description="用户ID")):
     return {
         "code": 200,
         "message": "获取成功",
-        "data": school or {"school_id": None, "school_name": "未绑定", "city": ""}
+        "data": school or {"school_id": None, "school_name": "未绑定"}
     }

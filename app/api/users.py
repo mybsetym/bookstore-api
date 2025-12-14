@@ -202,7 +202,7 @@ def phone_register(req: PhoneRegisterRequest):
 def get_user_info(user_id: int):
     user = execute_query_one(
         sql="""
-            SELECT user_id, username, nickname, email, phone, school_id, avg_rating, review_count 
+            SELECT user_id, username, email, phone, nickname, avatar, school_id, avg_rating, review_count 
             FROM users WHERE user_id = %s
             """,
         params=(user_id,)

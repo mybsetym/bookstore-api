@@ -25,7 +25,7 @@ router = APIRouter(
 class CreateOrderRequest(BaseModel):
     """创建订单的请求参数"""
     product_id: int  # 商品ID（对应book表的book_id）
-    buyer_id: int  # 买家ID（对应logindata表的ID）
+    buyer_id: int  # 买家ID（对应users表的user_id）
     quantity: int = 1  # 购买数量，默认1本（二手书通常单本交易，可调整）
     fulfillment_type: str  # 履约方式：self_pickup（自提）/logistics（第三方物流）
     pickup_location_id: Optional[int] = None  # 自提地点ID（履约方式为self_pickup时必传）

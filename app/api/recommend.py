@@ -204,7 +204,7 @@ def enrich_products_with_seller_info(products: List[dict]):
 
     for product in products:
         seller_info = seller_map.get(product['seller_ID'], {})
-        product['seller_nickname'] = seller_info.get('nickname', '未知用户')
+        product['seller_nickname'] = seller_info.get('nickname', seller_info.get('username', '未知用户'))
         product['seller_avatar'] = seller_info.get('avatar', '')
         product.pop('seller_ID', None)
 

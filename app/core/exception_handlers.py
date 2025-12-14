@@ -61,7 +61,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     request_id = str(uuid.uuid4())
     errors = [
-        {"field": ".".join(error["loc"]), "message": error["msg"]}
+        {"field": ".".join(map(str, error["loc"])), "message": error["msg"]}
         for error in exc.errors()
     ]
     logger.warning(

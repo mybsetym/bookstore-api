@@ -46,10 +46,9 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
     # 使用你在 db.py 中定义的 execute_query_one 函数来查询用户
     user = execute_query_one(
-        "SELECT ld.ID, ld.phone, ld.email, u.nickname, u.avatar_url, u.school_id "
-        "FROM logindata ld "
-        "LEFT JOIN users u ON ld.ID = u.user_id "
-        "WHERE ld.ID = %s",
+        "SELECT user_id, phone, email, school_id, username, nickname, avatar, avg_rating, review_count "
+        "FROM users "
+        "WHERE user_id = %s",
         (user_id,)
     )
 
