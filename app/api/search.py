@@ -1,6 +1,7 @@
 # app/api/search.py
 from fastapi import APIRouter, Query, HTTPException
-from app.utils.db import  execute_query_paginated,get_db_connection
+from typing import Optional
+from app.utils.db import execute_query_paginated, get_db_connection, execute_query
 import pymysql
 router = APIRouter(
     prefix="/search",
@@ -59,27 +60,26 @@ def search_books(
     }
 
 
-@router.get("/categories", summary="获取所有图书分类（用于筛选下拉框）")
-def get_book_categories():
-    conn = None  # 提前初始化conn，避免finally中变量未定义
-    cursor = None
+@router.get("/categories", summary="获取图书分类（支持获取所有或指定分类）")
+def get_book_categories(
+        category_id: Optional[int] = Query(None, description="分类ID，不传则获取所有分类"),
+        category_name: Optional[str] = Query(None, description="分类名称，不传则获取所有分类")
+):
     try:
-        # 1. 建立数据库连接
-        conn = get_db_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)  # 这里要确保pymysql已导入
-
-        # 2. 关联查询分类名称（核心逻辑正确，保留）
-        sql = """
-        SELECT DISTINCT c.name AS category
-        FROM book b
-        LEFT JOIN categories c ON b.category_id = c.id
-        WHERE c.name IS NOT NULL  # 过滤无分类的书籍
-        ORDER BY c.name
-        """
-        cursor.execute(sql)
-        result = cursor.fetchall()
-
-        # 3. 提取分类列表
+        if category_id is not None:
+            # 根据ID获取单个分类
+            sql = "SELECT name AS category FROM categories WHERE category_id = %s"
+            result = execute_query(sql, (category_id,))
+        elif category_name is not None:
+            # 根据名称获取单个分类（支持模糊匹配）
+            sql = "SELECT name AS category FROM categories WHERE name LIKE %s"
+            result = execute_query(sql, (f"%{category_name}%",))
+        else:
+            # 获取所有分类（从categories表直接查询，不需要关联book表）
+            sql = "SELECT name AS category FROM categories ORDER BY name"
+            result = execute_query(sql)
+        
+        # 提取分类列表
         categories = [item["category"] for item in result]
         return categories  # FastAPI会自动转为JSON响应
 
@@ -89,9 +89,3 @@ def get_book_categories():
     except Exception as e:
         # 其他未知错误
         raise HTTPException(status_code=500, detail=f"系统错误：{str(e)}")
-    finally:
-        # 安全关闭资源：判断cursor/conn是否存在再关闭
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()

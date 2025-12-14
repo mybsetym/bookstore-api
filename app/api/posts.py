@@ -90,7 +90,7 @@ def get_post_list(
                    u.avatar,
                    p.user_id
             FROM posts p
-                     LEFT JOIN users u ON p.user_id = u.id
+                     LEFT JOIN users u ON p.user_id = u.user_id
             WHERE p.status = 'visible'
             ORDER BY p.create_time DESC
                 LIMIT %s
@@ -145,7 +145,7 @@ def add_post_comment(
 ):
     # 1. 校验评论用户存在
     user = execute_query_one(
-        sql="SELECT id FROM users WHERE id = %s",
+        sql="SELECT user_id FROM users WHERE user_id = %s",
         params=(req.user_id,)
     )
     if not user:

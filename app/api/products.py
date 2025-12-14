@@ -31,7 +31,7 @@ def get_all_categories():
     后端仅存储小类，前端可根据此列表自行分组为大类；
     返回数据格式：[{id: 1, name: "高校教材", description: "高等教育教材"}, ...]
     """
-    sql = "SELECT id, name, description FROM categories ORDER BY name;"
+    sql = "SELECT category_id as id, name, description FROM categories ORDER BY name;"
     categories = execute_query(sql)
     return {
         "code": 200,
@@ -60,7 +60,7 @@ def get_products(
           FROM book b
                    LEFT JOIN users u ON b.seller_ID = u.user_id
                    LEFT JOIN school s ON u.school_id = s.school_id
-                   LEFT JOIN categories c ON b.category_id = c.id # 关联分类表，返回分类名称
+                   LEFT JOIN categories c ON b.category_id = c.category_id # 关联分类表，返回分类名称
           WHERE 1=1 \
           """
     params = []
@@ -80,7 +80,7 @@ def get_products(
         sql += " AND b.price <= %s"
         params.append(max_price)
     if condition:
-        sql += " AND b.condition = %s"
+        sql += " AND b.`condition` = %s"
         params.append(condition)
     if school_id:
         sql += " AND u.school_id = %s"
@@ -121,14 +121,14 @@ def create_product(
         raise HTTPException(status_code=400, detail="卖家不存在")
 
     # 2. 校验分类ID是否有效（核心联动逻辑）
-    if not execute_query_one("SELECT id FROM categories WHERE id = %s", (category_id,)):
+    if not execute_query_one("SELECT category_id FROM categories WHERE category_id = %s", (category_id,)):
         raise HTTPException(status_code=400, detail="无效的分类ID，请从 /products/categories 获取")
 
     # 3. 插入商品数据（关联 category_id）
     now = datetime.now(timezone.utc)
     sql = """
           INSERT INTO book (book_name, author, publisher, publish_date, ISBN, category_id, \
-                            price, stock, condition, cover_img, book_desc, seller_ID, status, \
+                            price, stock, `condition`, cover_img, book_desc, seller_ID, status, \
                             create_time, update_time) \
           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, %s, %s) \
           """
@@ -179,7 +179,7 @@ def update_product(
 
     if category_id is not None:
         # 校验新分类ID是否有效
-        if not execute_query_one("SELECT id FROM categories WHERE id = %s", (category_id,)):
+        if not execute_query_one("SELECT category_id FROM categories WHERE category_id = %s", (category_id,)):
             raise HTTPException(status_code=400, detail="无效的分类ID")
         update_fields.append("category_id = %s")
         params.append(category_id)
@@ -227,11 +227,11 @@ def update_product(
 @router.get("/{book_id}", summary="获取商品详情")
 def get_product_detail(book_id: int = Path(..., ge=1, description="商品ID")):
     sql = """
-          SELECT b.*, u.nickname as seller_name, s.school_name, c.id as category_id, c.name as category_name
+          SELECT b.*, u.nickname as seller_name, s.school_name, c.category_id, c.name as category_name
           FROM book b
                    LEFT JOIN users u ON b.seller_ID = u.user_id
                    LEFT JOIN school s ON u.school_id = s.school_id
-                   LEFT JOIN categories c ON b.category_id = c.id # 关联分类表，返回分类ID和名称
+                   LEFT JOIN categories c ON b.category_id = c.category_id # 关联分类表，返回分类ID和名称
           WHERE b.book_id = %s \
           """
     product = execute_query_one(sql, (book_id,))
